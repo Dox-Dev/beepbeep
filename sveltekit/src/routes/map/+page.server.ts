@@ -1,9 +1,9 @@
 import { GEOCODE_API_KEY } from "$lib/server/env";
 
 export const actions = {
-	searchLocation: async ({ request }) => {
+    searchLocation: async ({ request }) => {
         // wait for form to be submitted
-		const data = await request.formData();
+        const data = await request.formData();
 
         // get geocode response in json
         const search_query = data.get("search_input");
@@ -16,5 +16,5 @@ export const actions = {
             success: true,
             geocode_json: geocode_json,
         };
-	}
+    }
 };
