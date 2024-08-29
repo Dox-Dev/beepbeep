@@ -1,37 +1,40 @@
 <script lang="ts">
+    import { fromLonLat } from "ol/proj";
     import Map from "ol/Map";
     import View from "ol/View";
     import TileLayer from "ol/layer/Tile";
-    import VectorLayer from "ol/layer/Vector"; // For drawing the route
-    import VectorSource from "ol/source/Vector"; // Source for the vector layer
-    import LineString from "ol/geom/LineString"; // For route geometry
-    import Feature from "ol/Feature"; // Feature class
-    import { Stroke, Style } from "ol/style"; // For styling the route
+    import VectorLayer from "ol/layer/Vector";
+    import VectorSource from "ol/source/Vector";
+    import LineString from "ol/geom/LineString";
+    import Feature from "ol/Feature";
+    import { Stroke, Style } from "ol/style";
     import XYZ from "ol/source/XYZ";
-    import { fromLonLat } from "ol/proj"; // For converting coordinates
     import { onMount } from "svelte";
-    import Draw from "ol/interaction/Draw"; // Importing Draw interaction
+    import Draw from "ol/interaction/Draw";
 
     const enum map_themes {
         LIGHT_MODE = "https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
         DARK_MODE = "https://{a-c}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
     }
 
+    const centerCoord = [121.0685, 14.6539]; // longitude, latitude
+    const zoom = 15;
+
     let mapElement: HTMLElement;
     let mountedMap: Map;
-    let vectorSource = new VectorSource(); // Create a vector source for the drawn features
+    let vectorSource = new VectorSource();
     let vectorLayer = new VectorLayer({
         source: vectorSource,
         style: new Style({
             stroke: new Stroke({
-                color: "blue", // Change to desired color
+                color: "blue",
                 width: 3,
             }),
         }),
     });
 
-    export let startCoords: [number, number] | null = null; // Coordinates for starting location
-    export let endCoords: [number, number] | null = null; // Coordinates for destination location
+    export let startCoords: [number, number] | null = null;
+    export let endCoords: [number, number] | null = null;
 
     onMount(() => {
         mountedMap = new Map({
@@ -42,30 +45,26 @@
                         url: map_themes.DARK_MODE,
                     }),
                 }),
-                vectorLayer, // Add vector layer to the map
+                vectorLayer,
             ],
             view: new View({
-                center: fromLonLat([121.0583, 14.6091]), // Adjust to center the map
-                zoom: 12, // Adjust zoom level as needed
+                center: fromLonLat(centerCoord),
+                zoom,
             }),
         });
 
-        // Add draw interaction for line strings
         const draw = new Draw({
             source: vectorSource,
             type: "LineString",
         });
 
         mountedMap.addInteraction(draw);
-
-        // Optional: Handle draw end event
         draw.on("drawend", (event) => {
-            const feature = event.feature; // Access the drawn feature
+            const feature = event.feature;
             console.log("Feature drawn:", feature);
         });
     });
 
-    // Function to fetch and display route
     async function fetchRoute() {
         if (startCoords && endCoords) {
             const url = `http://localhost:5000/route/v1/driving/${startCoords[0]},${startCoords[1]};${endCoords[0]},${endCoords[1]}?overview=full`;
@@ -76,7 +75,7 @@
                 const route = routeData.routes[0].geometry.coordinates;
                 const lineString = new LineString(route);
                 const feature = new Feature(lineString);
-                vectorSource.addFeature(feature); // Add the route to the vector layer
+                vectorSource.addFeature(feature);
             }
         }
     }
