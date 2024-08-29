@@ -1,10 +1,6 @@
 <script lang="ts">
-<<<<<<< HEAD
-    import { enhance } from "$app/forms";
-=======
     import { enhance } from '$app/forms';
     import map_icon from '../../lib/assets/map_icon.svg';
->>>>>>> upstream/main
 
     import {
         Avatar,
