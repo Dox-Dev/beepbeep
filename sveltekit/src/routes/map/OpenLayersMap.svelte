@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { fromLonLat, toLonLat } from 'ol/proj';
     import Map from "ol/Map";
     import View from "ol/View";
     import TileLayer from "ol/layer/Tile";
@@ -9,6 +10,8 @@
         LIGHT_MODE =  "https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
         DARK_MODE = "https://{a-c}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
     };
+    const centerCoord = [121.0685, 14.6539]; // longitude, latitude
+    const zoom = 15;
 
     let mapElement: HTMLElement;
     let mountedMap: Map;
@@ -23,8 +26,8 @@
                 }),
             ],
             view: new View({
-                center: [0, 0],
-                zoom: 2,
+                center: fromLonLat(centerCoord),
+                zoom,
             }),
         });
     });
