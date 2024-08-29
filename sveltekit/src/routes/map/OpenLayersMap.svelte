@@ -14,7 +14,7 @@
     const zoom = 15;
 
     let mapElement: HTMLElement;
-    let mountedMap: Map;
+    export let mountedMap: Map;
     onMount(() => {
         mountedMap = new Map({
             target: mapElement,

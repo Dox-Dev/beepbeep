@@ -1,14 +1,27 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
+    import map_icon from '../../lib/assets/map_icon.svg';
 
     import { Avatar, Button, ButtonGroup, Card, Dropdown, DropdownItem, Input } from "flowbite-svelte";
     import { IconMapPinFilled } from "@tabler/icons-svelte";
     import { IconArrowLeft, IconArrowsUpDown, IconCircleFilled, IconShape, IconDotsVertical, IconPlus, IconWallet } from "@tabler/icons-svelte";
 
+    import Map from "ol/Map";
+    import Feature from "ol/Feature";
+    import { fromLonLat, toLonLat } from 'ol/proj';
+    import Icon from 'ol/style/Icon.js';
+    import Point from "ol/geom/Point";
+    import Style from 'ol/style/Style.js';
+    import VectorSource from "ol/source/Vector";
+    import VectorLayer from "ol/layer/Vector";
+
     import OpenLayersMap from "./OpenLayersMap.svelte";
 
     // allows +page.svelte to access results of form actions
     export let form;
+
+    // allows this file to access mountedMap in OpenLayersMap.svelte
+    export let mountedMap:Map;
 
     const BUTTON_GRID = {
         "Restaurant": "resto-icon",
@@ -19,6 +32,67 @@
         "Beach": "beach-icon",
         "Library": "library-icon",
         "See more": "seemore-icon",
+    }
+
+    // Create a style for the marker
+	const mapPinIconStyle = new Style({
+		image: new Icon({
+		    width: 20,
+		    height: 20,
+		    src: map_icon
+	    })
+	});
+
+    let sourceLayer = new VectorLayer();
+    let destinationLayer = new VectorLayer();
+
+    function check_if_layer_is_in_map(layer: VectorLayer) {
+        const isLayerExistsInMap = mountedMap.getLayers().getArray().includes(layer);
+        return isLayerExistsInMap;
+    }
+
+    function put_pin_on_map(pin_type:string, location_name:string, lat: string, long:string) {
+        if(pin_type == "source") {
+            // remove existing source layer if already in use
+            if(check_if_layer_is_in_map(sourceLayer)) mountedMap.removeLayer(sourceLayer);
+
+            // make map pin and put in vector source
+            let map_pin_feature = new Feature({
+                    geometry: new Point(
+                        fromLonLat([Number(long),Number(lat)])
+                    ),
+                    style: mapPinIconStyle,
+                    name: location_name
+                }
+            );
+            const sourceSource = new VectorSource({features:[map_pin_feature]});
+
+            // apply vector source to destination layer
+            // then apply destination layer to map
+            sourceLayer.setSource(sourceSource);
+            mountedMap.addLayer(sourceLayer);
+            console.log("added source pin");
+        } else {
+            // remove existing destination layer if already in use
+            if(check_if_layer_is_in_map(destinationLayer)) mountedMap.removeLayer(destinationLayer);
+
+            // make map pin and put in vector source
+            let map_pin_feature = new Feature({
+                    geometry: new Point(
+                        fromLonLat([Number(long),Number(lat)])
+                    ),
+                    style: mapPinIconStyle,
+                    name: location_name
+                }
+            );
+            const destinationSource = new VectorSource({features:[map_pin_feature]});
+
+            // apply vector source to destination layer
+            // then apply destination layer to map
+            destinationLayer.setSource(destinationSource);
+            mountedMap.addLayer(destinationLayer);
+            console.log("added destination pin");
+        }
     }
 
     let source_location_first = true;
@@ -52,7 +126,7 @@
 </script>
 
 <div class="overflow-hidden h-screen relative flex z-0">
-    <OpenLayersMap/>
+    <OpenLayersMap bind:mountedMap/>
 
     <div class="grid grid-cols-2">
         <!-- Top left drawer-->
@@ -115,7 +189,7 @@
 
         {#if form?.success}
             {#each form?.geocode_json as location}
-                <Button color="light">{location.display_name}</Button>
+                <Button color="light" on:click={()=>{put_pin_on_map(is_searching_source ? "source" : "destination", location.display_name, location.lat, location.lon)}}>{location.display_name}</Button>
             {/each}
         {/if}
     </Card>
