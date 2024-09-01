@@ -1,5 +1,7 @@
 # beepbeep
 
+Arweave link: https://ugrgpbllajdbusfkpndackskeczkbrdxfvx47igtfs5e4yxmizda.arweave.net/oaJnhWsCRhpIqntGASpKILKgxHctb8-g0yy6TmLsRkY/
+
 ## Tech Stack
 * Backend/Frontend: [Sveltekit](https://kit.svelte.dev/)
 * Component library: [Flowbite Svelte](https://flowbite-svelte.com/), [Tabler Icons](https://tabler.io/icons)
