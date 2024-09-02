@@ -3,14 +3,15 @@
     import Map from "ol/Map";
     import View from "ol/View";
     import TileLayer from "ol/layer/Tile";
-    import VectorLayer from "ol/layer/Vector";
-    import VectorSource from "ol/source/Vector";
-    import LineString from "ol/geom/LineString";
-    import Feature from "ol/Feature";
-    import { Stroke, Style } from "ol/style";
     import XYZ from "ol/source/XYZ";
-    import { onMount } from "svelte";
-    import Draw from "ol/interaction/Draw";
+    import { onMount, onDestroy } from "svelte";
+    import { Draw } from "ol/interaction";
+    import { LineString } from "ol/geom";
+    import { Vector as VectorLayer } from "ol/layer";
+    import VectorSource from "ol/source/Vector";
+    import { Style, Stroke } from "ol/style";
+    import { Feature } from "ol";
+    import type { Coordinate } from "ol/coordinate";
 
     const enum map_themes {
         LIGHT_MODE = "https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
@@ -21,22 +22,16 @@
     const zoom = 15;
 
     let mapElement: HTMLElement;
-    let mountedMap: Map;
-    let vectorSource = new VectorSource();
-    let vectorLayer = new VectorLayer({
-        source: vectorSource,
-        style: new Style({
-            stroke: new Stroke({
-                color: "blue",
-                width: 3,
-            }),
-        }),
-    });
+    export let mountedMap: Map;
+    let vectorSource: VectorSource;
+    let savedRoutes: Array<Coordinate[]> = [];
 
-    export let startCoords: [number, number] | null = null;
-    export let endCoords: [number, number] | null = null;
+    // Accept routes as a prop
+    export let routes: Array<Coordinate[]> = [];
 
     onMount(() => {
+        vectorSource = new VectorSource(); // Initialize the vector source
+
         mountedMap = new Map({
             target: mapElement,
             layers: [
@@ -45,7 +40,16 @@
                         url: map_themes.DARK_MODE,
                     }),
                 }),
-                vectorLayer,
+                new VectorLayer({
+                    // Vector layer for routes
+                    source: vectorSource,
+                    style: new Style({
+                        stroke: new Stroke({
+                            color: "orange",
+                            width: 4,
+                        }),
+                    }),
+                }),
             ],
             view: new View({
                 center: fromLonLat(centerCoord),
@@ -53,32 +57,54 @@
             }),
         });
 
+        // Draw interaction for drawing lines
         const draw = new Draw({
             source: vectorSource,
             type: "LineString",
         });
 
-        mountedMap.addInteraction(draw);
+        mountedMap.addInteraction(draw); // Draw interaction
+
+        // Event listener for when a feature is added
         draw.on("drawend", (event) => {
             const feature = event.feature;
-            console.log("Feature drawn:", feature);
+            const geometry = feature.getGeometry() as LineString;
+
+            // Save the coordinates of the drawn route
+            savedRoutes.push(geometry.getCoordinates() as Coordinate[]);
+            console.log("Saved route coordinates:", savedRoutes);
         });
+
+        // Draw the incoming routes
+        drawRoutes(routes);
     });
 
-    async function fetchRoute() {
-        if (startCoords && endCoords) {
-            const url = `http://localhost:5000/route/v1/driving/${startCoords[0]},${startCoords[1]};${endCoords[0]},${endCoords[1]}?overview=full`;
-            const response = await fetch(url);
-            const routeData = await response.json();
-
-            if (routeData.routes.length > 0) {
-                const route = routeData.routes[0].geometry.coordinates;
-                const lineString = new LineString(route);
-                const feature = new Feature(lineString);
-                vectorSource.addFeature(feature);
-            }
+    // Function to draw routes on the map
+    function drawRoutes(routes: Array<Coordinate[]>) {
+        if (!Array.isArray(routes)) {
+            console.error("Routes must be an array");
+            return;
         }
+
+        routes.forEach((route) => {
+            if (route.length > 0 && Array.isArray(route[0])) {
+                const lineString = new LineString(route);
+                const feature = new Feature({
+                    geometry: lineString,
+                });
+                vectorSource.addFeature(feature); // Add the feature to the vector source
+            } else {
+                console.warn("Invalid route format, skipping:", route);
+            }
+        });
     }
+
+    // Clean up on component destroy
+    onDestroy(() => {
+        if (mountedMap) {
+            mountedMap.setTarget(undefined); // Use undefined instead of null
+        }
+    });
 </script>
 
 <div bind:this={mapElement} class="relative top-0 left-0 h-dvh w-screen" />
