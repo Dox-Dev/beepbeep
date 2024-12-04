@@ -60,7 +60,7 @@
             <h5 class="text-xs text-center tracking-tight">
                 Don't have an account?
                 <span class="text-orange-300">
-                    <a href="/signup">Sign up</a>
+                    <a href="/">Sign up</a>
                 </span>
             </h5>
         </div>
